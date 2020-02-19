@@ -9,6 +9,7 @@ import java.util.Stack;
  * @author Angie Auel
  *
  * ISSUES - This doesn't YET work with completely empty rows/columns.
+ * Also, only works for squares, where number of row and columns are equal.
  * 
  *******************************************************************/
 
@@ -17,128 +18,38 @@ public class NonogramGrid {
 	private static List<String> GRID_CELL_NAMES;
 
 	private int totalNumberOfCells;
-	private double columnCount;
-	private int[] cellValues;
-	private int[] playerCellValues;
+	private double columnRowCount;
+	private List<Integer> cellValues;
+	
 
 	public NonogramGrid(Nonogram newPuzzle) {
 		totalNumberOfCells = newPuzzle.getTotalNumberOfCells();
-		columnCount = Math.sqrt(totalNumberOfCells);
-		cellValues = newPuzzle.getCellValues();
-		playerCellValues = new int[totalNumberOfCells];
-		initializeGridCellNames();
-		setupPlayerCellValues();
+		columnRowCount = Math.sqrt(totalNumberOfCells);
+		cellValues = newPuzzle.getAllCellValues();
 	}
-
-	private void initializeGridCellNames() {
-		GRID_CELL_NAMES = new ArrayList<>();
-		char row = 'A';
-		for (int rowNum = 0; rowNum < columnCount; rowNum++, row++) {
-
-			char col = 'A';
-			for (int colNum = 0; colNum < columnCount; colNum++, col++) {
-				GRID_CELL_NAMES.add(Character.toString(col) + row);
-			}
-		}
-	}
-
-	private void setupPlayerCellValues() {
-		for (int cell = 0; cell < totalNumberOfCells; cell++) {
-			playerCellValues[cell] = 0;
-		}
-	}
-
-	public boolean changeCell(String changeInput) {
-		/*
-		 * (Examples) 
-		 * - Single Cells: 
-		 * 		- AA 
-		 * 		- AA. 
-		 * - Cell Ranges: 
-		 * 		- Columns: 
-		 * 			- AA:AE 
-		 * 			- AA:AE_ 
-		 * 		- Rows: 
-		 * 			- AA:EA 
-		 * 			- AA:EA_
-		 */
-		boolean result = false;
-		int newValue = 0;
-		if (changeInput != null) {
-			int inputLen = changeInput.length();
-			if (inputLen > 1) {
-				String cellName = changeInput.substring(0, 2).toUpperCase();
-				int cellIndex = GRID_CELL_NAMES.indexOf(cellName);
-				// turn on single cell
-				if (inputLen == 2 || inputLen == 3) {
-					if (inputLen == 2) {
-						newValue = 1;
-					} else if (inputLen == 3) {
-						// get instruction from the 3rd character
-						char changeChar = changeInput.charAt(2);
-						if (changeChar == '.') {
-							// change single cell to off
-							newValue = 2;
-						} else {
-							// change single cell to blank
-							newValue = 0;
-						}
-					}
-					playerCellValues[cellIndex] = newValue;
-					result = true;
-				} else {
-					// range of cells
-					// strategy:  determine each cell name to change, 
-					// then call changeCell() on each, with optional instruction
-					String changeChar = "";
-					if (inputLen == 6) {
-						changeChar = changeInput.substring(5,6);
-					}
-					if (changeInput.charAt(0) == changeInput.charAt(3)) {
-						// Column AA:AE, AA:AE_
-						char column = changeInput.charAt(0);
-						char rowStart = changeInput.charAt(1);
-						int numberOfCells = changeInput.charAt(4) - changeInput.charAt(1);
-						for (int i=0; i<=numberOfCells; i++, rowStart++) {
-							changeCell(Character.toString(column) + rowStart + changeChar);
-						}						
-						result = true;
-					} else if (changeInput.charAt(1) == changeInput.charAt(4)) {
-						// Rows: AA:EA, AA:EA_
-						char row = changeInput.charAt(1);
-						char colStart = changeInput.charAt(0);
-						int numberOfCells = changeInput.charAt(3) - changeInput.charAt(0);
-						for (int i=0; i<=numberOfCells; i++, colStart++) {
-							changeCell(Character.toString(colStart) + row + changeChar);
-						}	
-						result = true;
-					}
-				}
-			} 
-		}
-		return result;
-	}
+	
 
 	public void printGrid() {
 
-		// For each row, create a stack to hold the counts
-		// of filled-in squares that are separated by blank squares
+		// For each row, create a stack to hold the counts of filled-in squares that are separated by blank squares
 		List<Stack<Integer>> listOfRowCounts = new ArrayList<>();
-		for (int i = 0; i < totalNumberOfCells; i += columnCount) {
+		for (int i = 0; i < totalNumberOfCells; i += columnRowCount) {
 			listOfRowCounts.add(getRowCounts(i));
 		}
 		int leadingRowSpacesNeeded = 3 * getMaxCountForHeaders(listOfRowCounts);
 		List<String> rowHeaders = getRowHeaders(listOfRowCounts);
-
 		/*
-		 * rowHeaders(0) = "  5 "; rowHeaders(1) = "1 1 "; rowHeaders(2) = "  5 ";
-		 * rowHeaders(3) = "1 1 "; rowHeaders(4) = "  5 ";
+		 * rowHeaders(0) = "  5 "; 
+		 * rowHeaders(1) = "1 1 "; 
+		 * rowHeaders(2) = "  5 ";
+		 * rowHeaders(3) = "1 1 "; 
+		 * rowHeaders(4) = "  5 ";
 		 */
 
 		// For each column, create a stack to hold the counts
 		// of filled-in squares that are separated by blank squares
 		List<Stack<Integer>> listOfColumnCounts = new ArrayList<>();
-		for (int i = 0; i < columnCount; i++) {
+		for (int i = 0; i < columnRowCount; i++) {
 			listOfColumnCounts.add(getColumnCounts(i));
 		}
 		Stack<String> columnHeaders = getColumnHeaders(listOfColumnCounts);
@@ -161,7 +72,7 @@ public class NonogramGrid {
 		char columnChar = 'A';
 		String columnLabels = leadingSpaces;
 		String rowMarker = leadingSpaces + "+";
-		for (int i = 0; i < columnCount; i++, columnChar++) {
+		for (int i = 0; i < columnRowCount; i++, columnChar++) {
 			columnLabels += "  " + columnChar + " ";
 			rowMarker += "---+";
 		}
@@ -175,7 +86,7 @@ public class NonogramGrid {
 		// print a rowMarker before each row, and at the end to complete the box
 		// each row starts with the row header counts, followed by the core grid rows
 		char rowChar = 'A';
-		for (int i = 0; i < columnCount; i++, rowChar++) {
+		for (int i = 0; i < columnRowCount; i++, rowChar++) {
 			System.out.println(rowHeaders.get(i) + coreGridRows.get(i) + " " + rowChar);
 			System.out.println(rowMarker);
 		}
@@ -202,7 +113,7 @@ public class NonogramGrid {
 			} else {
 				// successive 0s (blank squares), so no change to tempSum
 			}
-			cellNumber += columnCount; // move to the next cell of the column
+			cellNumber += columnRowCount; // move to the next cell of the column
 		}
 		// If the column ends with a filled-in square (value=1),
 		// push tempSum to the stack
@@ -235,7 +146,7 @@ public class NonogramGrid {
 			// loop through all stacks, taking the last number from the top of the
 			// stack through each loop, and adding to the end of the string for that
 			// header row, or " " if the stack is empty
-			for (int headerColumn = 0; headerColumn < columnCount; headerColumn++) {
+			for (int headerColumn = 0; headerColumn < columnRowCount; headerColumn++) {
 
 				Stack<Integer> currentStack = listOfColumnCounts.get(headerColumn);
 				if (currentStack.isEmpty()) {
@@ -257,7 +168,7 @@ public class NonogramGrid {
 		int tempSum = 0;
 
 		// For each cell in the current row only...
-		for (int i = 0; i < columnCount; i++) {
+		for (int i = 0; i < columnRowCount; i++) {
 
 			// tempSum will increment for every successive 1 found in the row
 			if (cellValues[cellNumber] == 1) {
@@ -298,7 +209,7 @@ public class NonogramGrid {
 		int maxCount = getMaxCountForHeaders(listOfRowCounts); // example: 2
 
 		// create a string of counts for each row of the puzzle
-		for (int headerRow = 0; headerRow < columnCount; headerRow++) {
+		for (int headerRow = 0; headerRow < columnRowCount; headerRow++) {
 
 			String currentHeaderRow = "";
 			Stack<Integer> currentStack = listOfRowCounts.get(headerRow);
@@ -348,11 +259,11 @@ public class NonogramGrid {
 		List<String> gridRows = new ArrayList<>();
 
 		int cellNumber = 0;
-		for (int rowNumber = 0; rowNumber < columnCount; rowNumber++) {
+		for (int rowNumber = 0; rowNumber < columnRowCount; rowNumber++) {
 
 			String gridString = "";
 
-			for (int columnNumber = 0; columnNumber < columnCount; columnNumber++) {
+			for (int columnNumber = 0; columnNumber < columnRowCount; columnNumber++) {
 
 				if (playerCellValues[cellNumber] == 1) {
 					gridString += "|###";
