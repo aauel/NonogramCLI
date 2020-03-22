@@ -5,12 +5,24 @@ import java.util.List;
 import java.util.Map;
 
 public class NonogramPlayer {
+/*
+ *  PUBLIC METHODS:
+ *  - void setupPlayerCellValues()
+ *  - boolean isPlayerPuzzleComplete()
+ *  - boolean changeCell(String changeInput)
+ *  
+ *  PRIVATE METHODS:
+ *  - boolean parseCellRange(String changeInput, int inputLen)
+ *  - boolean changeCellsInColumn(String changeInput, int inputLen, String changeChar)
+ *  - boolean changeCellsInRow(String changeInput, int inputLen, String changeChar)
+ *  - boolean changeSingleCell(String changeInput, int inputLen)
+ *  - int determineAction(String changeInput)
+ */
 	
 	Nonogram thisPuzzle;
 	List<String> thisPuzzleOnCellNames;
 	private Map<String, Integer> playerCellValues;
 	
-
 	public NonogramPlayer(Nonogram newPuzzle) {
 		thisPuzzle = newPuzzle;
 		thisPuzzleOnCellNames = thisPuzzle.getListOfOnCellNames();
@@ -101,6 +113,7 @@ public class NonogramPlayer {
 		char column = changeInput.charAt(0);
 		char rowStart = changeInput.charAt(1);
 		char rowStop = changeInput.charAt(4);
+		// look to see which one is greater, to know where to start
 		
 		int numberOfCellsInRange = rowStop - rowStart;
 		for (int i=0; i<=numberOfCellsInRange; i++, rowStart++) {
